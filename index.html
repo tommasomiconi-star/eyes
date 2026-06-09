@@ -75,7 +75,40 @@ video {
 </div>
 <script src="https://unpkg.com/ml5@1/dist/ml5.min.js"></script>
 <script>
-// ALL JS GOES HERE
+const video = document.getElementById('video');
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+const startBtn = document.getElementById('startBtn');
+const statusEl = document.getElementById('status');
+
+let detector = null;
+let poses = null;
+let prevImageData = null;
+let glitchCounter = 0;
+let freezeFrames = 0;
+let signalLoss = 0;
+
+function sizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', sizeCanvas);
+sizeCanvas();
+
+async function startWebcam() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+    video.srcObject = stream;
+    await video.play();
+    startBtn.style.display = 'none';
+    statusEl.textContent = 'SURVEILLANCE FEED // SIGNAL UNSTABLE';
+    initDetector();
+  } catch (err) {
+    statusEl.textContent = 'ERRORE WEBCAM // ' + err.message;
+  }
+}
+
+startBtn.addEventListener('click', startWebcam);
 </script>
 </body>
 </html>
