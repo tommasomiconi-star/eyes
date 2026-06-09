@@ -87,6 +87,8 @@ let prevImageData = null;
 let glitchCounter = 0;
 let freezeFrames = 0;
 let signalLoss = 0;
+let offCanvas = document.createElement('canvas');
+let offCtx = offCanvas.getContext('2d');
 
 function sizeCanvas() {
   canvas.width = window.innerWidth;
@@ -152,18 +154,16 @@ function renderFrame() {
   const cw = canvas.width;
   const ch = canvas.height;
 
-  // Draw video to an offscreen canvas at native resolution
-  const off = document.createElement('canvas');
-  off.width = vw;
-  off.height = vh;
-  const offCtx = off.getContext('2d');
+  // Draw video to offscreen canvas at native resolution
+  offCanvas.width = vw;
+  offCanvas.height = vh;
   offCtx.drawImage(video, 0, 0, vw, vh);
   const imageData = offCtx.getImageData(0, 0, vw, vh);
   const data = imageData.data;
 
   const zones = getPoseZones();
 
-  const tileSize = 28 + Math.floor(Math.random() * 13); // 28-40px
+  const tileSize = 28 + Math.floor(Math.random() * 13); // 28-40px, random per frame for unstable VHS feel
 
   // Convert head zone to canvas coords
   let headBox = null;
