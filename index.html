@@ -109,6 +109,42 @@ async function startWebcam() {
 }
 
 startBtn.addEventListener('click', startWebcam);
+
+async function initDetector() {
+  try {
+    detector = await ml5.poseDetection(video, 'MoveNet', { flipped: true });
+    statusEl.textContent = 'SURVEILLANCE FEED // SIGNAL UNSTABLE';
+    loop();
+  } catch (err) {
+    console.warn('ml5 not available, running without detection:', err);
+    detector = null;
+    loop();
+  }
+}
+
+function getPoseZones() {
+  if (!poses || poses.length === 0) return null;
+  const keypoints = poses[0].keypoints;
+  const nose = keypoints.find(k => k.name === 'nose');
+  const leftEye = keypoints.find(k => k.name === 'left_eye');
+  const rightEye = keypoints.find(k => k.name === 'right_eye');
+  if (!nose || nose.score < 0.3) return null;
+
+  const cx = nose.x;
+  const cy = nose.y;
+  const headSize = 120;
+  const headHalf = headSize / 2;
+
+  return {
+    head: {
+      x: cx - headHalf,
+      y: cy - headHalf,
+      w: headSize,
+      h: headSize
+    },
+    nose: { x: cx, y: cy }
+  };
+}
 </script>
 </body>
 </html>
