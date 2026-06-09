@@ -84,7 +84,6 @@ const statusEl = document.getElementById('status');
 let detector = null;
 let poses = null;
 let prevImageData = null;
-let glitchCounter = 0;
 let freezeFrames = 0;
 let signalLoss = 0;
 let offCanvas = document.createElement('canvas');
@@ -271,8 +270,6 @@ function applyPostFX() {
 }
 
 function loop() {
-  glitchCounter++;
-
   // --- Micro-lag: freeze for 1-2 frames every 2-5 seconds ---
   if (freezeFrames > 0) {
     freezeFrames--;
@@ -328,6 +325,7 @@ function loop() {
       canvas.style.filter = `brightness(${0.5 + Math.random() * 1.5})`;
       setTimeout(() => { canvas.style.filter = 'brightness(1)'; }, 50 + Math.random() * 150);
     }
+    statusEl.textContent = 'SURVEILLANCE FEED // SIGNAL UNSTABLE';
     requestAnimationFrame(loop);
   }
 }
