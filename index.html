@@ -414,6 +414,30 @@ async function getPersonMask() {
   }
 }
 
+function compositePersonGlitch() {
+  const cw = canvas.width;
+  const ch = canvas.height;
+
+  // Draw clean video as background on main canvas
+  offCanvas.width = cw;
+  offCanvas.height = ch;
+  offCtx.drawImage(video, 0, 0, cw, ch);
+  ctx.drawImage(offCanvas, 0, 0);
+
+  // Restore binary mask onto maskCanvas (in case it was modified)
+  if (personMaskData) {
+    maskCtx.putImageData(personMaskData, 0, 0);
+  }
+
+  // Clip glitch canvas through the mask
+  maskCtx.globalCompositeOperation = 'source-in';
+  maskCtx.drawImage(glitchCanvas, 0, 0);
+  maskCtx.globalCompositeOperation = 'source-over';
+
+  // Overlay glitched person pixels on main canvas
+  ctx.drawImage(maskCanvas, 0, 0);
+}
+
 function applyPostFX() {
   const cw = canvas.width;
   const ch = canvas.height;
