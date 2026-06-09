@@ -480,9 +480,26 @@ function applyPostFX() {
 }
 
 function loop() {
-  renderFrame();
-  applyPostFX();
+  if (segmenter && !modelLoading) {
+    frameSkip++;
+    if (frameSkip % 3 === 0) {
+      getPersonMask().then(maskData => {
+        if (maskData) {
+          personMaskData = maskData;
+        }
+      });
+    }
+    if (personMaskData) {
+      renderGlitchFrame();
+      compositePersonGlitch();
+    } else {
+      renderFrame();
+    }
+  } else {
+    renderFrame();
+  }
 
+  applyPostFX();
   statusEl.textContent = 'SURVEILLANCE FEED // SIGNAL UNSTABLE';
   requestAnimationFrame(loop);
 }
