@@ -163,6 +163,8 @@ function renderFrame() {
   const zones = getPoseZones();
 
   const tileSize = 28 + Math.floor(Math.random() * 13); // 28-40px, random per frame for unstable VHS feel
+  const vibX = Math.floor((Math.random() - 0.5) * 4); // micro-shift ±2px
+  const vibY = Math.floor((Math.random() - 0.5) * 4);
 
   // Convert head zone to canvas coords
   let headBox = null;
@@ -179,11 +181,11 @@ function renderFrame() {
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, cw, ch);
 
-  // Process tile by tile
+  // Process tile by tile (with micro-vibration offset)
   for (let ty = 0; ty < ch; ty += tileSize) {
     for (let tx = 0; tx < cw; tx += tileSize) {
-      const origX = Math.floor((tx / cw) * vw);
-      const origY = Math.floor((ty / ch) * vh);
+      const origX = Math.floor((tx / cw) * vw + vibX);
+      const origY = Math.floor((ty / ch) * vh + vibY);
       const idx = (origY * vw + origX) * 4;
       const r = data[idx] || 0;
       const g = data[idx + 1] || 0;
@@ -288,6 +290,7 @@ function applyPostFX() {
     ctx.drawImage(canvas, gx, gy);
     ctx.globalAlpha = 1.0;
   }
+  // Save raw post-FX frame for next frame's ghost trail
   prevImageData = ctx.getImageData(0, 0, cw, ch);
 }
 
