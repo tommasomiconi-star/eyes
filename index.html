@@ -163,7 +163,7 @@ function renderFrame() {
 
   const zones = getPoseZones();
 
-  const tileSize = 28 + Math.floor(Math.random() * 12); // 28-40px
+  const tileSize = 28 + Math.floor(Math.random() * 13); // 28-40px
 
   // Convert head zone to canvas coords
   let headBox = null;
@@ -204,13 +204,13 @@ function renderFrame() {
       let color;
       if (inHead) {
         // Head zone: overexposed white + noise
-        const noise = Math.random() > 0.6 ? 255 : 0;
+        const noise = Math.random() < 0.6 ? 255 : 0;
         color = noise;
       } else {
         // Background/body: dark, nearly invisible
         const threshold = 30;
         if (gray > threshold && Math.random() > 0.92) {
-          color = 30 + Math.floor(Math.random() * 40); // faint body hint
+          color = 30 + Math.floor(Math.random() * 41); // faint body hint
         } else if (Math.random() > 0.995) {
           color = 255; // occasional dead pixel
         } else {
