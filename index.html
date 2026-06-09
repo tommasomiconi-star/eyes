@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>eyes — VHS Horror Webcam</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #000;
+  color: #0a0a0a;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+video {
+  display: none;
+}
+#overlay {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 10;
+}
+#startBtn {
+  background: #111;
+  color: #888;
+  border: 1px solid #333;
+  padding: 12px 32px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  cursor: pointer;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+#startBtn:hover {
+  background: #1a1a1a;
+  color: #aaa;
+  border-color: #555;
+}
+#status {
+  color: #444;
+  font-size: 11px;
+  letter-spacing: 3px;
+  margin-top: 8px;
+  text-transform: uppercase;
+}
+</style>
+</head>
+<body>
+<div id="container">
+  <canvas id="mainCanvas"></canvas>
+  <video id="video" autoplay playsinline></video>
+  <div id="overlay">
+    <button id="startBtn">▶ attiva webcam</button>
+    <div id="status">SURVEILLANCE FEED // SIGNAL UNSTABLE</div>
+  </div>
+</div>
+<script src="https://unpkg.com/ml5@1/dist/ml5.min.js"></script>
+<script>
+// ALL JS GOES HERE
+</script>
+</body>
+</html>
