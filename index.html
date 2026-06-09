@@ -180,7 +180,6 @@ let glitchCtx = glitchCanvas.getContext('2d');
 let maskCanvas = document.createElement('canvas');
 let maskCtx = maskCanvas.getContext('2d');
 let personMaskData = null;
-let frameSkip = 0;
 let modelLoading = false;
 
 const settings = { contrast: 50, pixel: 50, noise: 50 };
@@ -220,10 +219,8 @@ async function startWebcam() {
     statusEl.textContent = 'CARICAMENTO MODELLO...';
     modelLoading = true;
     try {
-      segmenter = await ml5.bodySegmentation('SelfieSegmentation', {
-        runtime: 'mediapipe',
-        modelType: 'general'
-      });
+      segmenter = ml5.bodySegmentation('SelfieSegmentation', { maskType: 'person' });
+      segmenter.detectStart(video, gotSegmentation);
     } catch (err) {
       console.warn('ml5 bodySegmentation failed, using fallback:', err);
       segmenter = null;
@@ -364,56 +361,33 @@ function renderGlitchFrame() {
   }
 }
 
-async function getPersonMask() {
-  if (!segmenter) return null;
+function gotSegmentation(results) {
+  if (!results || results.length === 0) return;
+  const rawMask = results[0].mask;
+  if (!rawMask) return;
+
+  const cw = canvas.width;
+  const ch = canvas.height;
+  maskCanvas.width = cw;
+  maskCanvas.height = ch;
+
   const vw = video.videoWidth;
   const vh = video.videoHeight;
-  if (vw === 0 || vh === 0) return null;
+  const maskW = rawMask.width || rawMask.videoWidth || vw;
+  const maskH = rawMask.height || rawMask.videoHeight || vh;
+  maskCtx.drawImage(rawMask, 0, 0, maskW, maskH, 0, 0, cw, ch);
 
-  try {
-    const results = await segmenter.segment(video);
-    if (!results || results.length === 0) return null;
-    const rawMask = results[0].mask;
-    if (!rawMask) return null;
-
-    const cw = canvas.width;
-    const ch = canvas.height;
-    maskCanvas.width = cw;
-    maskCanvas.height = ch;
-
-    // Handle different mask formats from ml5.js
-    let maskSource;
-    if (rawMask instanceof ImageData) {
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = rawMask.width;
-      tempCanvas.height = rawMask.height;
-      const tempCtx = tempCanvas.getContext('2d');
-      tempCtx.putImageData(rawMask, 0, 0);
-      maskSource = tempCanvas;
-    } else {
-      maskSource = rawMask;
-    }
-
-    const maskW = rawMask.width || rawMask.videoWidth || vw;
-    const maskH = rawMask.height || rawMask.videoHeight || vh;
-    maskCtx.drawImage(maskSource, 0, 0, maskW, maskH, 0, 0, cw, ch);
-
-    // Threshold to binary (white = person, black = bg)
-    const maskData = maskCtx.getImageData(0, 0, cw, ch);
-    const d = maskData.data;
-    for (let i = 0; i < d.length; i += 4) {
-      const val = d[i] > 128 ? 255 : 0;
-      d[i] = val;
-      d[i + 1] = val;
-      d[i + 2] = val;
-      d[i + 3] = 255;
-    }
-    maskCtx.putImageData(maskData, 0, 0);
-    return maskData;
-  } catch (err) {
-    console.warn('segment() failed:', err);
-    return null;
+  const maskData = maskCtx.getImageData(0, 0, cw, ch);
+  const d = maskData.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const val = d[i] > 128 ? 255 : 0;
+    d[i] = val;
+    d[i + 1] = val;
+    d[i + 2] = val;
+    d[i + 3] = 255;
   }
+  maskCtx.putImageData(maskData, 0, 0);
+  personMaskData = maskData;
 }
 
 function compositePersonGlitch() {
@@ -482,21 +456,9 @@ function applyPostFX() {
 }
 
 function loop() {
-  if (segmenter && !modelLoading) {
-    frameSkip++;
-    if (frameSkip % 3 === 0) {
-      getPersonMask().then(maskData => {
-        if (maskData) {
-          personMaskData = maskData;
-        }
-      });
-    }
-    if (personMaskData) {
-      renderGlitchFrame();
-      compositePersonGlitch();
-    } else {
-      renderFrame();
-    }
+  if (segmenter && !modelLoading && personMaskData) {
+    renderGlitchFrame();
+    compositePersonGlitch();
   } else {
     renderFrame();
   }
@@ -506,6 +468,6 @@ function loop() {
   requestAnimationFrame(loop);
 }
 </script>
-<script src="https://unpkg.com/ml5@1/dist/ml5.min.js"></script>
+<script src="https://unpkg.com/ml5@1/dist/ml5.js"></script>
 </body>
 </html>
