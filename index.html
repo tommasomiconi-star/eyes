@@ -62,6 +62,83 @@ video {
   margin-top: 8px;
   text-transform: uppercase;
 }
+#settingsBtn {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
+  background: none;
+  border: 1px solid #333;
+  color: #555;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+#settingsBtn:hover {
+  color: #aaa;
+  border-color: #555;
+}
+#settingsPanel {
+  position: fixed;
+  top: 50px;
+  right: 16px;
+  z-index: 20;
+  background: #080808;
+  border: 1px solid #222;
+  padding: 16px 18px;
+  display: none;
+  min-width: 180px;
+}
+#settingsPanel.visible {
+  display: block;
+}
+.setting-row {
+  margin-bottom: 12px;
+}
+.setting-row:last-child {
+  margin-bottom: 0;
+}
+.setting-row label {
+  display: block;
+  color: #555;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.setting-row input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 2px;
+  background: #222;
+  outline: none;
+  border: none;
+}
+.setting-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #555;
+  cursor: pointer;
+  border: none;
+}
+.setting-row input[type="range"]::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: #555;
+  cursor: pointer;
+  border: none;
+}
+.setting-row .value {
+  color: #444;
+  font-size: 9px;
+  float: right;
+}
 </style>
 </head>
 <body>
@@ -72,8 +149,22 @@ video {
     <button id="startBtn">▶ attiva webcam</button>
     <div id="status">SURVEILLANCE FEED // SIGNAL UNSTABLE</div>
   </div>
+  <button id="settingsBtn">⚙</button>
+  <div id="settingsPanel">
+    <div class="setting-row">
+      <label>CONTRASTO <span class="value" id="contrastVal">50</span></label>
+      <input type="range" id="contrastSlider" min="0" max="100" value="50">
+    </div>
+    <div class="setting-row">
+      <label>PIXEL <span class="value" id="pixelVal">50</span></label>
+      <input type="range" id="pixelSlider" min="0" max="100" value="50">
+    </div>
+    <div class="setting-row">
+      <label>NOISE <span class="value" id="noiseVal">50</span></label>
+      <input type="range" id="noiseSlider" min="0" max="100" value="50">
+    </div>
+  </div>
 </div>
-<script src="https://unpkg.com/ml5@1/dist/ml5.min.js"></script>
 <script>
 const video = document.getElementById('video');
 const canvas = document.getElementById('mainCanvas');
@@ -81,13 +172,38 @@ const ctx = canvas.getContext('2d');
 const startBtn = document.getElementById('startBtn');
 const statusEl = document.getElementById('status');
 
-let detector = null;
-let poses = null;
-let prevImageData = null;
-let freezeFrames = 0;
-let signalLoss = 0;
 let offCanvas = document.createElement('canvas');
 let offCtx = offCanvas.getContext('2d');
+let segmenter = null;
+let glitchCanvas = document.createElement('canvas');
+let glitchCtx = glitchCanvas.getContext('2d');
+let maskCanvas = document.createElement('canvas');
+let maskCtx = maskCanvas.getContext('2d');
+let personMaskData = null;
+let frameSkip = 0;
+let modelLoading = false;
+
+const settings = { contrast: 50, pixel: 50, noise: 50 };
+const contrastSlider = document.getElementById('contrastSlider');
+const pixelSlider = document.getElementById('pixelSlider');
+const noiseSlider = document.getElementById('noiseSlider');
+const contrastVal = document.getElementById('contrastVal');
+const pixelVal = document.getElementById('pixelVal');
+const noiseVal = document.getElementById('noiseVal');
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsPanel = document.getElementById('settingsPanel');
+
+settingsBtn.addEventListener('click', () => settingsPanel.classList.toggle('visible'));
+
+function setupSlider(slider, valEl, key) {
+  slider.addEventListener('input', () => {
+    settings[key] = +slider.value;
+    valEl.textContent = slider.value;
+  });
+}
+setupSlider(contrastSlider, contrastVal, 'contrast');
+setupSlider(pixelSlider, pixelVal, 'pixel');
+setupSlider(noiseSlider, noiseVal, 'noise');
 
 function sizeCanvas() {
   canvas.width = window.innerWidth;
@@ -101,9 +217,21 @@ async function startWebcam() {
     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
     video.srcObject = stream;
     await video.play();
+    statusEl.textContent = 'CARICAMENTO MODELLO...';
+    modelLoading = true;
+    try {
+      segmenter = ml5.bodySegmentation('SelfieSegmentation', {
+        runtime: 'mediapipe',
+        modelType: 'general'
+      });
+    } catch (err) {
+      console.warn('ml5 bodySegmentation failed, using fallback:', err);
+      segmenter = null;
+    }
+    modelLoading = false;
     startBtn.style.display = 'none';
     statusEl.textContent = 'SURVEILLANCE FEED // SIGNAL UNSTABLE';
-    initDetector();
+    loop();
   } catch (err) {
     statusEl.textContent = 'ERRORE WEBCAM // ' + err.message;
   }
@@ -111,38 +239,23 @@ async function startWebcam() {
 
 startBtn.addEventListener('click', startWebcam);
 
-async function initDetector() {
-  try {
-    detector = await ml5.poseDetection(video, 'MoveNet', { flipped: true });
-    statusEl.textContent = 'SURVEILLANCE FEED // SIGNAL UNSTABLE';
-    loop();
-  } catch (err) {
-    console.warn('ml5 not available, running without detection:', err);
-    detector = null;
-    loop();
+function macroblockRow(data, cw, ch) {
+  const mbH = 4 + Math.floor(Math.random() * 8);
+  const mbY = Math.floor(Math.random() * (ch - mbH));
+  const mbW = Math.floor(Math.random() * (cw / 2)) + 20;
+  const mbX = Math.floor(Math.random() * (cw - mbW));
+  const srcY = Math.floor(Math.random() * (ch - mbH));
+  for (let y = 0; y < mbH; y++) {
+    const sy = (srcY + y) * cw * 4;
+    const dy = (mbY + y) * cw * 4;
+    for (let x = 0; x < mbW; x++) {
+      const si = sy + (mbX + x) * 4;
+      const di = dy + (mbX + x) * 4;
+      data[di] = data[si];
+      data[di + 1] = data[si + 1];
+      data[di + 2] = data[si + 2];
+    }
   }
-}
-
-function getPoseZones() {
-  if (!poses || poses.length === 0) return null;
-  const keypoints = poses[0].keypoints;
-  const nose = keypoints.find(k => k.name === 'nose');
-  if (!nose || nose.score < 0.3) return null;
-
-  const cx = nose.x;
-  const cy = nose.y;
-  const headSize = 120;
-  const headHalf = headSize / 2;
-
-  return {
-    head: {
-      x: cx - headHalf,
-      y: cy - headHalf,
-      w: headSize,
-      h: headSize
-    },
-    nose: { x: cx, y: cy }
-  };
 }
 
 function renderFrame() {
@@ -153,77 +266,49 @@ function renderFrame() {
   const cw = canvas.width;
   const ch = canvas.height;
 
-  // Draw video to offscreen canvas at native resolution
   offCanvas.width = vw;
   offCanvas.height = vh;
   offCtx.drawImage(video, 0, 0, vw, vh);
   const imageData = offCtx.getImageData(0, 0, vw, vh);
   const data = imageData.data;
 
-  const zones = getPoseZones();
+  const pixelAmount = settings.pixel / 100;
+  const tileW = Math.max(2, Math.round(2 + pixelAmount * 14));
+  const tileH = Math.max(1, Math.round(1 + pixelAmount * 6));
+  const contrastNorm = (settings.contrast / 100) * 3;
+  const noiseChance = (settings.noise / 100) * 0.15;
+  const decompose = (1 - pixelAmount) * 0.5 + 0.2;
 
-  const tileSize = 28 + Math.floor(Math.random() * 13); // 28-40px, random per frame for unstable VHS feel
-  const vibX = Math.floor((Math.random() - 0.5) * 4); // micro-shift ±2px
-  const vibY = Math.floor((Math.random() - 0.5) * 4);
-
-  // Convert head zone to canvas coords
-  let headBox = null;
-  if (zones) {
-    headBox = {
-      x: (zones.head.x / vw) * cw,
-      y: (zones.head.y / vh) * ch,
-      w: (zones.head.w / vw) * cw,
-      h: (zones.head.h / vh) * ch
-    };
-  }
-
-  // Clear main canvas
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, cw, ch);
 
-  // Process tile by tile (with micro-vibration offset)
-  for (let ty = 0; ty < ch; ty += tileSize) {
-    for (let tx = 0; tx < cw; tx += tileSize) {
-      const origX = Math.floor((tx / cw) * vw + vibX);
-      const origY = Math.floor((ty / ch) * vh + vibY);
-      const idx = (origY * vw + origX) * 4;
+  for (let ty = 0; ty < ch; ty += tileH) {
+    for (let tx = 0; tx < cw; tx += tileW) {
+      if (Math.random() < decompose) continue;
+
+      const driftX = Math.floor((Math.random() - 0.5) * tileW * 4);
+      const driftY = Math.floor((Math.random() - 0.5) * tileH * 2);
+
+      const sx = Math.max(0, Math.min(vw - 1, Math.floor(((tx + driftX) / cw) * vw)));
+      const sy = Math.max(0, Math.min(vh - 1, Math.floor(((ty + driftY) / ch) * vh)));
+      const idx = (sy * vw + sx) * 4;
       const r = data[idx] || 0;
       const g = data[idx + 1] || 0;
       const b = data[idx + 2] || 0;
 
-      // Determine if this tile is in the head zone
-      const tileCenterX = tx + tileSize / 2;
-      const tileCenterY = ty + tileSize / 2;
-      const inHead = headBox &&
-        tileCenterX >= headBox.x &&
-        tileCenterX <= headBox.x + headBox.w &&
-        tileCenterY >= headBox.y &&
-        tileCenterY <= headBox.y + headBox.h;
+      let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+      gray = Math.round((gray - 128) * contrastNorm + 128);
+      gray = Math.min(255, Math.max(0, gray));
+      gray = gray > 128 ? 0 : 255;
 
-      const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+      if (Math.random() < noiseChance) gray = Math.random() > 0.5 ? 255 : 0;
 
-      let color;
-      if (inHead) {
-        // Head zone: overexposed white + noise
-        const noise = Math.random() < 0.6 ? 255 : 0;
-        color = noise;
-      } else {
-        // Background/body: dark, nearly invisible
-        const threshold = 30;
-        if (gray > threshold && Math.random() > 0.92) {
-          color = 30 + Math.floor(Math.random() * 41); // faint body hint
-        } else if (Math.random() > 0.995) {
-          color = 255; // occasional dead pixel
-        } else {
-          color = 0;
-        }
-      }
-
-      const val = Math.min(255, Math.max(0, color));
-      ctx.fillStyle = `rgb(${val},${val},${val})`;
-      ctx.fillRect(tx, ty, tileSize, tileSize);
+      ctx.fillStyle = `rgb(${gray},${gray},${gray})`;
+      ctx.fillRect(tx, ty, tileW, tileH);
     }
   }
+
+  if (Math.random() < 0.12) macroblockRow(ctx.getImageData(0, 0, cw, ch).data, cw, ch);
 }
 
 function applyPostFX() {
@@ -233,11 +318,11 @@ function applyPostFX() {
   const srcData = new Uint8ClampedArray(imageData.data);
   const data = imageData.data;
 
-  // --- CRT bulge: precomputed lookup, stretch center cols, compress edges ---
+  // --- CRT bulge ---
   const bulgeLUT = new Uint16Array(cw);
   for (let x = 0; x < cw; x++) {
     const nx = (x / cw) * 2 - 1;
-    const distortion = 1 + 0.08 * nx * nx;
+    const distortion = 1 + 0.12 * nx * nx;
     bulgeLUT[x] = Math.max(0, Math.min(cw - 1, Math.floor((x - cw / 2) * distortion + cw / 2)));
   }
   for (let y = 0; y < ch; y++) {
@@ -252,108 +337,29 @@ function applyPostFX() {
     }
   }
 
-  // --- Scanlines ---
-  for (let y = 0; y < ch; y += 3) {
-    for (let x = 0; x < cw; x++) {
-      const idx = (y * cw + x) * 4;
-      data[idx] = data[idx] * 0.5;
-      data[idx + 1] = data[idx + 1] * 0.5;
-      data[idx + 2] = data[idx + 2] * 0.5;
-    }
-  }
-
-  // --- Static bands ---
-  const numBands = 1 + Math.floor(Math.random() * 3);
-  for (let b = 0; b < numBands; b++) {
-    if (Math.random() < 0.7) {
-      const bandY = Math.floor(Math.random() * ch);
-      const bandH = 2 + Math.floor(Math.random() * 8);
-      for (let y = bandY; y < Math.min(ch, bandY + bandH); y++) {
-        for (let x = 0; x < cw; x++) {
-          const idx = (y * cw + x) * 4;
-          const v = Math.random() > 0.5 ? 255 : 0;
-          data[idx] = v;
-          data[idx + 1] = v;
-          data[idx + 2] = v;
-        }
+  // --- Chromatic shift on edges (subtle color fringe) ---
+  if (Math.random() < 0.15) {
+    const shiftX = 1 + Math.floor(Math.random() * 3);
+    for (let y = 0; y < ch; y++) {
+      const row = y * cw * 4;
+      for (let x = cw - 1; x >= shiftX; x--) {
+        const i = row + x * 4;
+        data[i] = data[i - shiftX * 4];
       }
     }
   }
 
   ctx.putImageData(imageData, 0, 0);
-
-  // --- Ghosting with micro-vibration offset ---
-  if (prevImageData) {
-    ctx.globalAlpha = 0.25;
-    const gx = (Math.random() - 0.5) * 8;
-    const gy = (Math.random() - 0.5) * 8;
-    ctx.drawImage(canvas, gx, gy);
-    ctx.globalAlpha = 1.0;
-  }
-  // Save raw post-FX frame for next frame's ghost trail
-  prevImageData = ctx.getImageData(0, 0, cw, ch);
 }
 
 function loop() {
-  // --- Micro-lag: freeze for 1-2 frames every 2-5 seconds ---
-  if (freezeFrames > 0) {
-    freezeFrames--;
-    requestAnimationFrame(loop);
-    return;
-  }
-  if (Math.random() < 0.008) {
-    freezeFrames = 1 + Math.floor(Math.random() * 2);
-  }
+  renderFrame();
+  applyPostFX();
 
-  // --- Signal loss: full static for 200-500ms ---
-  if (signalLoss > 0) {
-    const cw = canvas.width;
-    const ch = canvas.height;
-    const imgData = ctx.createImageData(cw, ch);
-    for (let i = 0; i < imgData.data.length; i += 4) {
-      const v = Math.random() > 0.5 ? 255 : 0;
-      imgData.data[i] = v;
-      imgData.data[i + 1] = v;
-      imgData.data[i + 2] = v;
-      imgData.data[i + 3] = 255;
-    }
-    ctx.putImageData(imgData, 0, 0);
-    signalLoss--;
-    applyPostFX();
-    requestAnimationFrame(loop);
-    return;
-  }
-  if (Math.random() < 0.002) {
-    signalLoss = 12 + Math.floor(Math.random() * 18);
-  }
-
-  // --- Normal frame ---
-  if (detector) {
-    detector.detect(video, (results) => {
-      poses = results;
-      renderFrame();
-      applyPostFX();
-
-      // --- Flickering: random brightness shift ---
-      if (Math.random() < 0.05) {
-        canvas.style.filter = `brightness(${0.5 + Math.random() * 1.5})`;
-        setTimeout(() => { canvas.style.filter = 'brightness(1)'; }, 50 + Math.random() * 150);
-      }
-
-      statusEl.textContent = 'SURVEILLANCE FEED // SIGNAL UNSTABLE';
-      requestAnimationFrame(loop);
-    });
-  } else {
-    renderFrame();
-    applyPostFX();
-    if (Math.random() < 0.05) {
-      canvas.style.filter = `brightness(${0.5 + Math.random() * 1.5})`;
-      setTimeout(() => { canvas.style.filter = 'brightness(1)'; }, 50 + Math.random() * 150);
-    }
-    statusEl.textContent = 'SURVEILLANCE FEED // SIGNAL UNSTABLE';
-    requestAnimationFrame(loop);
-  }
+  statusEl.textContent = 'SURVEILLANCE FEED // SIGNAL UNSTABLE';
+  requestAnimationFrame(loop);
 }
 </script>
+<script src="https://unpkg.com/ml5@1/dist/ml5.min.js"></script>
 </body>
 </html>
