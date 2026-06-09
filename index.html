@@ -220,7 +220,7 @@ async function startWebcam() {
     statusEl.textContent = 'CARICAMENTO MODELLO...';
     modelLoading = true;
     try {
-      segmenter = ml5.bodySegmentation('SelfieSegmentation', {
+      segmenter = await ml5.bodySegmentation('SelfieSegmentation', {
         runtime: 'mediapipe',
         modelType: 'general'
       });
@@ -309,6 +309,57 @@ function renderFrame() {
   }
 
   if (Math.random() < 0.12) macroblockRow(ctx.getImageData(0, 0, cw, ch).data, cw, ch);
+}
+
+function renderGlitchFrame() {
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  if (vw === 0 || vh === 0) return;
+
+  const cw = glitchCanvas.width;
+  const ch = glitchCanvas.height;
+
+  offCanvas.width = vw;
+  offCanvas.height = vh;
+  offCtx.drawImage(video, 0, 0, vw, vh);
+  const imageData = offCtx.getImageData(0, 0, vw, vh);
+  const data = imageData.data;
+
+  const pixelAmount = settings.pixel / 100;
+  const tileW = Math.max(2, Math.round(2 + pixelAmount * 14));
+  const tileH = Math.max(1, Math.round(1 + pixelAmount * 6));
+  const contrastNorm = (settings.contrast / 100) * 3;
+  const noiseChance = (settings.noise / 100) * 0.15;
+  const decompose = (1 - pixelAmount) * 0.5 + 0.2;
+
+  glitchCtx.fillStyle = '#000';
+  glitchCtx.fillRect(0, 0, cw, ch);
+
+  for (let ty = 0; ty < ch; ty += tileH) {
+    for (let tx = 0; tx < cw; tx += tileW) {
+      if (Math.random() < decompose) continue;
+
+      const driftX = Math.floor((Math.random() - 0.5) * tileW * 4);
+      const driftY = Math.floor((Math.random() - 0.5) * tileH * 2);
+
+      const sx = Math.max(0, Math.min(vw - 1, Math.floor(((tx + driftX) / cw) * vw)));
+      const sy = Math.max(0, Math.min(vh - 1, Math.floor(((ty + driftY) / ch) * vh)));
+      const idx = (sy * vw + sx) * 4;
+      const r = data[idx] || 0;
+      const g = data[idx + 1] || 0;
+      const b = data[idx + 2] || 0;
+
+      let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+      gray = Math.round((gray - 128) * contrastNorm + 128);
+      gray = Math.min(255, Math.max(0, gray));
+      gray = gray > 128 ? 0 : 255;
+
+      if (Math.random() < noiseChance) gray = Math.random() > 0.5 ? 255 : 0;
+
+      glitchCtx.fillStyle = `rgb(${gray},${gray},${gray})`;
+      glitchCtx.fillRect(tx, ty, tileW, tileH);
+    }
+  }
 }
 
 function applyPostFX() {
