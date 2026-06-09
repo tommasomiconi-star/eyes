@@ -228,7 +228,24 @@ function applyPostFX() {
   const cw = canvas.width;
   const ch = canvas.height;
   const imageData = ctx.getImageData(0, 0, cw, ch);
+  const srcData = new Uint8ClampedArray(imageData.data);
   const data = imageData.data;
+
+  // --- CRT bulge: stretch center columns, compress edges ---
+  for (let y = 0; y < ch; y++) {
+    for (let x = 0; x < cw; x++) {
+      const nx = (x / cw) * 2 - 1; // -1 to 1
+      const distortion = 1 + 0.08 * nx * nx; // bulge factor
+      const srcX = Math.floor(((x / cw) - 0.5) * distortion + 0.5) * cw;
+      const clampedX = Math.max(0, Math.min(cw - 1, srcX));
+      const srcIdx = (y * cw + clampedX) * 4;
+      const dstIdx = (y * cw + x) * 4;
+      data[dstIdx] = srcData[srcIdx];
+      data[dstIdx + 1] = srcData[srcIdx + 1];
+      data[dstIdx + 2] = srcData[srcIdx + 2];
+      data[dstIdx + 3] = 255;
+    }
+  }
 
   // --- Scanlines ---
   for (let y = 0; y < ch; y += 3) {
@@ -240,7 +257,7 @@ function applyPostFX() {
     }
   }
 
-  // --- Static bands (horizontal noise bars) ---
+  // --- Static bands ---
   const numBands = 1 + Math.floor(Math.random() * 3);
   for (let b = 0; b < numBands; b++) {
     if (Math.random() < 0.7) {
@@ -260,10 +277,12 @@ function applyPostFX() {
 
   ctx.putImageData(imageData, 0, 0);
 
-  // --- Ghosting (trail effect) ---
+  // --- Ghosting with micro-vibration offset ---
   if (prevImageData) {
-    ctx.globalAlpha = 0.3;
-    ctx.drawImage(canvas, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6);
+    ctx.globalAlpha = 0.25;
+    const gx = (Math.random() - 0.5) * 8;
+    const gy = (Math.random() - 0.5) * 8;
+    ctx.drawImage(canvas, gx, gy);
     ctx.globalAlpha = 1.0;
   }
   prevImageData = ctx.getImageData(0, 0, cw, ch);
