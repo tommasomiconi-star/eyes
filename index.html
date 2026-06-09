@@ -269,6 +269,68 @@ function applyPostFX() {
   }
   prevImageData = ctx.getImageData(0, 0, cw, ch);
 }
+
+function loop() {
+  glitchCounter++;
+
+  // --- Micro-lag: freeze for 1-2 frames every 2-5 seconds ---
+  if (freezeFrames > 0) {
+    freezeFrames--;
+    requestAnimationFrame(loop);
+    return;
+  }
+  if (Math.random() < 0.008) {
+    freezeFrames = 1 + Math.floor(Math.random() * 2);
+  }
+
+  // --- Signal loss: full static for 200-500ms ---
+  if (signalLoss > 0) {
+    const cw = canvas.width;
+    const ch = canvas.height;
+    const imgData = ctx.createImageData(cw, ch);
+    for (let i = 0; i < imgData.data.length; i += 4) {
+      const v = Math.random() > 0.5 ? 255 : 0;
+      imgData.data[i] = v;
+      imgData.data[i + 1] = v;
+      imgData.data[i + 2] = v;
+      imgData.data[i + 3] = 255;
+    }
+    ctx.putImageData(imgData, 0, 0);
+    signalLoss--;
+    applyPostFX();
+    requestAnimationFrame(loop);
+    return;
+  }
+  if (Math.random() < 0.002) {
+    signalLoss = 12 + Math.floor(Math.random() * 18);
+  }
+
+  // --- Normal frame ---
+  if (detector) {
+    detector.detect(video, (results) => {
+      poses = results;
+      renderFrame();
+      applyPostFX();
+
+      // --- Flickering: random brightness shift ---
+      if (Math.random() < 0.05) {
+        canvas.style.filter = `brightness(${0.5 + Math.random() * 1.5})`;
+        setTimeout(() => { canvas.style.filter = 'brightness(1)'; }, 50 + Math.random() * 150);
+      }
+
+      statusEl.textContent = 'SURVEILLANCE FEED // SIGNAL UNSTABLE';
+      requestAnimationFrame(loop);
+    });
+  } else {
+    renderFrame();
+    applyPostFX();
+    if (Math.random() < 0.05) {
+      canvas.style.filter = `brightness(${0.5 + Math.random() * 1.5})`;
+      setTimeout(() => { canvas.style.filter = 'brightness(1)'; }, 50 + Math.random() * 150);
+    }
+    requestAnimationFrame(loop);
+  }
+}
 </script>
 </body>
 </html>
