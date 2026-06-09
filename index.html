@@ -316,8 +316,10 @@ function renderGlitchFrame() {
   const vh = video.videoHeight;
   if (vw === 0 || vh === 0) return;
 
-  const cw = glitchCanvas.width;
-  const ch = glitchCanvas.height;
+  const cw = canvas.width;
+  const ch = canvas.height;
+  glitchCanvas.width = cw;
+  glitchCanvas.height = ch;
 
   offCanvas.width = vw;
   offCanvas.height = vh;
