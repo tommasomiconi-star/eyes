@@ -224,6 +224,51 @@ function renderFrame() {
     }
   }
 }
+
+function applyPostFX() {
+  const cw = canvas.width;
+  const ch = canvas.height;
+  const imageData = ctx.getImageData(0, 0, cw, ch);
+  const data = imageData.data;
+
+  // --- Scanlines ---
+  for (let y = 0; y < ch; y += 3) {
+    for (let x = 0; x < cw; x++) {
+      const idx = (y * cw + x) * 4;
+      data[idx] = data[idx] * 0.5;
+      data[idx + 1] = data[idx + 1] * 0.5;
+      data[idx + 2] = data[idx + 2] * 0.5;
+    }
+  }
+
+  // --- Static bands (horizontal noise bars) ---
+  const numBands = 1 + Math.floor(Math.random() * 3);
+  for (let b = 0; b < numBands; b++) {
+    if (Math.random() > 0.7) {
+      const bandY = Math.floor(Math.random() * ch);
+      const bandH = 2 + Math.floor(Math.random() * 8);
+      for (let y = bandY; y < Math.min(ch, bandY + bandH); y++) {
+        for (let x = 0; x < cw; x++) {
+          const idx = (y * cw + x) * 4;
+          const v = Math.random() > 0.5 ? 255 : 0;
+          data[idx] = v;
+          data[idx + 1] = v;
+          data[idx + 2] = v;
+        }
+      }
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+
+  // --- Ghosting (trail effect) ---
+  if (prevImageData) {
+    ctx.globalAlpha = 0.3;
+    ctx.drawImage(canvas, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6);
+    ctx.globalAlpha = 1.0;
+  }
+  prevImageData = ctx.getImageData(0, 0, cw, ch);
+}
 </script>
 </body>
 </html>
