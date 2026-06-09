@@ -236,7 +236,7 @@ function applyPostFX() {
     for (let x = 0; x < cw; x++) {
       const nx = (x / cw) * 2 - 1; // -1 to 1
       const distortion = 1 + 0.08 * nx * nx; // bulge factor
-      const srcX = Math.floor(((x / cw) - 0.5) * distortion + 0.5) * cw;
+      const srcX = Math.floor((x - cw / 2) * distortion + cw / 2);
       const clampedX = Math.max(0, Math.min(cw - 1, srcX));
       const srcIdx = (y * cw + clampedX) * 4;
       const dstIdx = (y * cw + x) * 4;
