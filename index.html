@@ -362,6 +362,58 @@ function renderGlitchFrame() {
   }
 }
 
+async function getPersonMask() {
+  if (!segmenter) return null;
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  if (vw === 0 || vh === 0) return null;
+
+  try {
+    const results = await segmenter.segment(video);
+    if (!results || results.length === 0) return null;
+    const rawMask = results[0].mask;
+    if (!rawMask) return null;
+
+    const cw = canvas.width;
+    const ch = canvas.height;
+    maskCanvas.width = cw;
+    maskCanvas.height = ch;
+
+    // Handle different mask formats from ml5.js
+    let maskSource;
+    if (rawMask instanceof ImageData) {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = rawMask.width;
+      tempCanvas.height = rawMask.height;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.putImageData(rawMask, 0, 0);
+      maskSource = tempCanvas;
+    } else {
+      maskSource = rawMask;
+    }
+
+    const maskW = rawMask.width || rawMask.videoWidth || vw;
+    const maskH = rawMask.height || rawMask.videoHeight || vh;
+    maskCtx.drawImage(maskSource, 0, 0, maskW, maskH, 0, 0, cw, ch);
+
+    // Threshold to binary (white = person, black = bg)
+    const maskData = maskCtx.getImageData(0, 0, cw, ch);
+    const d = maskData.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const val = d[i] > 128 ? 255 : 0;
+      d[i] = val;
+      d[i + 1] = val;
+      d[i + 2] = val;
+      d[i + 3] = 255;
+    }
+    maskCtx.putImageData(maskData, 0, 0);
+    return maskData;
+  } catch (err) {
+    console.warn('segment() failed:', err);
+    return null;
+  }
+}
+
 function applyPostFX() {
   const cw = canvas.width;
   const ch = canvas.height;
