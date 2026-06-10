@@ -45,14 +45,10 @@
   const maxSize = 300;
   const minDistance = 40; // margine extra tra occhi
 
-  const placedEyes = [];
+  const eyes = [];
 
-  // Aggiungi il titolo come "ostacolo" con margine extra
-  placedEyes.push({
-    x: 20, y: 20,
-    width: 1000, height: 400,
-    margin: 60
-  });
+  // Titolo come ostacolo con margine extra
+  const titleZone = { x: 20, y: 20, width: 1000, height: 400, margin: 60 };
 
   for (let i = 0; i < numEyes; i++) {
     let attempts = 0;
@@ -66,16 +62,29 @@
       let y = Math.floor(Math.random() * (maxY - 20)) + 20;
 
       let overlapping = false;
-      for (const eye of placedEyes) {
-        const extra = eye.margin || minDistance;
-        const distX = Math.abs((x + size/2) - (eye.x + eye.width/2));
-        const distY = Math.abs((y + size/2) - (eye.y + eye.height/2));
-        const minX = (size + eye.width)/2 + extra;
-        const minY = (size + eye.height)/2 + extra;
 
-        if (distX < minX && distY < minY) {
-          overlapping = true;
-          break;
+      // Controlla collisione con titolo
+      const t = titleZone;
+      const distXt = Math.abs((x + size/2) - (t.x + t.width/2));
+      const distYt = Math.abs((y + size/2) - (t.y + t.height/2));
+      const minXt = (size + t.width)/2 + t.margin;
+      const minYt = (size + t.height)/2 + t.margin;
+      if (distXt < minXt && distYt < minYt) {
+        overlapping = true;
+      }
+
+      // Controlla collisione con altri occhi
+      if (!overlapping) {
+        for (const eye of eyes) {
+          const distX = Math.abs((x + size/2) - (eye.x + eye.width/2));
+          const distY = Math.abs((y + size/2) - (eye.y + eye.height/2));
+          const minX = (size + eye.width)/2 + minDistance;
+          const minY = (size + eye.height)/2 + minDistance;
+
+          if (distX < minX && distY < minY) {
+            overlapping = true;
+            break;
+          }
         }
       }
 
@@ -88,13 +97,49 @@
         img.style.left = x + 'px';
         img.style.top = y + 'px';
         document.body.appendChild(img);
-        placedEyes.push({ x, y, width: size, height: size });
+
+        // Velocità casuale: tra -1.5 e 1.5 pixel per frame
+        const speed = 0.5 + Math.random() * 1.5;
+        const angle = Math.random() * Math.PI * 2;
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
+
+        eyes.push({
+          el: img,
+          x, y,
+          width: size, height: size,
+          vx, vy
+        });
+
         placed = true;
       }
 
       attempts++;
     }
   }
+
+  function animate() {
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+
+    for (const eye of eyes) {
+      eye.x += eye.vx;
+      eye.y += eye.vy;
+
+      // Loop / wrap-around
+      if (eye.x < -eye.width) eye.x = W;
+      if (eye.x > W) eye.x = -eye.width;
+      if (eye.y < -eye.height) eye.y = H;
+      if (eye.y > H) eye.y = -eye.height;
+
+      eye.el.style.left = eye.x + 'px';
+      eye.el.style.top = eye.y + 'px';
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  animate();
 </script>
 </body>
 </html>
