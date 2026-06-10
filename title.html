@@ -145,18 +145,45 @@
       }
 
       if (!overlapping) {
-        const img = document.createElement('img');
-        img.src = eyeImages[Math.floor(Math.random() * eyeImages.length)];
-        img.className = 'eye';
-        img.style.width = size + 'px';
-        img.style.height = 'auto';
-        img.style.left = x + 'px';
-        img.style.top = y + 'px';
-        document.body.appendChild(img);
+        const eyeType = Math.floor(Math.random() * 2); // 0 = nero, 1 = luminoso
+        const eyeSrc = eyeType === 0 ? 'asset/occhio_nero.png' : 'asset/occhio_luminoso.png';
+        const pupilSrc = eyeType === 0 ? 'asset/pupilla nera.png' : 'asset/pupilla_lumi.png';
 
-        // Occhi statici — posizione casuale fissa
+        // Wrapper per l'occhio
+        const wrapper = document.createElement('div');
+        wrapper.className = 'eye-wrapper';
+        wrapper.style.position = 'absolute';
+        wrapper.style.left = x + 'px';
+        wrapper.style.top = y + 'px';
+        wrapper.style.width = size + 'px';
+        wrapper.style.height = size + 'px';
+        wrapper.style.zIndex = '2';
+
+        // Immagine occhio base
+        const img = document.createElement('img');
+        img.src = eyeSrc;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.display = 'block';
+
+        // Pupilla centrata
+        const pupil = document.createElement('img');
+        pupil.src = pupilSrc;
+        pupil.style.position = 'absolute';
+        pupil.style.top = '50%';
+        pupil.style.left = '50%';
+        pupil.style.transform = 'translate(-50%, -50%)';
+        pupil.style.width = '35%';
+        pupil.style.height = 'auto';
+        pupil.style.zIndex = '3';
+        pupil.style.pointerEvents = 'none';
+
+        wrapper.appendChild(img);
+        wrapper.appendChild(pupil);
+        document.body.appendChild(wrapper);
+
         eyes.push({
-          el: img,
+          el: wrapper,
           x, y,
           width: size, height: size
         });
