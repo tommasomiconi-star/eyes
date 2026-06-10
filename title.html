@@ -40,38 +40,60 @@
 </svg>
 <script>
   const eyeImages = ['asset/occhio_nero.png', 'asset/occhio_luminoso.png'];
-  const numEyes = Math.floor(Math.random() * 6) + 15; // 15-20 occhi
+  const numEyes = Math.floor(Math.random() * 5) + 8; // 8-12 occhi
   const minSize = 50;
   const maxSize = 200;
+  const minDistance = 80; // margine extra tra occhi
+
+  const placedEyes = [];
+
+  // Aggiungi il titolo come "ostacolo" con margine extra
+  placedEyes.push({
+    x: 20, y: 20,
+    width: 1000, height: 400,
+    margin: 60
+  });
 
   for (let i = 0; i < numEyes; i++) {
-    const img = document.createElement('img');
-    img.src = eyeImages[Math.floor(Math.random() * eyeImages.length)];
-    img.className = 'eye';
+    let attempts = 0;
+    let placed = false;
 
-    const size = Math.floor(Math.random() * (maxSize - minSize + 1)) + minSize;
-    img.style.width = size + 'px';
-    img.style.height = 'auto';
+    while (!placed && attempts < 100) {
+      const size = Math.floor(Math.random() * (maxSize - minSize + 1)) + minSize;
+      const maxX = window.innerWidth - size - 40;
+      const maxY = window.innerHeight - size - 40;
+      let x = Math.floor(Math.random() * (maxX - 20)) + 20;
+      let y = Math.floor(Math.random() * (maxY - 20)) + 20;
 
-    const maxX = window.innerWidth - size;
-    const maxY = window.innerHeight - size;
-    let x = Math.floor(Math.random() * maxX);
-    let y = Math.floor(Math.random() * maxY);
+      let overlapping = false;
+      for (const eye of placedEyes) {
+        const extra = eye.margin || minDistance;
+        const distX = Math.abs((x + size/2) - (eye.x + eye.width/2));
+        const distY = Math.abs((y + size/2) - (eye.y + eye.height/2));
+        const minX = (size + eye.width)/2 + extra;
+        const minY = (size + eye.height)/2 + extra;
 
-    const titleZoneWidth = 1020;
-    const titleZoneHeight = 400;
-    if (x < titleZoneWidth && y < titleZoneHeight) {
-      if (Math.random() > 0.5) {
-        x = titleZoneWidth + Math.floor(Math.random() * (maxX - titleZoneWidth));
-      } else {
-        y = titleZoneHeight + Math.floor(Math.random() * (maxY - titleZoneHeight));
+        if (distX < minX && distY < minY) {
+          overlapping = true;
+          break;
+        }
       }
+
+      if (!overlapping) {
+        const img = document.createElement('img');
+        img.src = eyeImages[Math.floor(Math.random() * eyeImages.length)];
+        img.className = 'eye';
+        img.style.width = size + 'px';
+        img.style.height = 'auto';
+        img.style.left = x + 'px';
+        img.style.top = y + 'px';
+        document.body.appendChild(img);
+        placedEyes.push({ x, y, width: size, height: size });
+        placed = true;
+      }
+
+      attempts++;
     }
-
-    img.style.left = x + 'px';
-    img.style.top = y + 'px';
-
-    document.body.appendChild(img);
   }
 </script>
 </body>
