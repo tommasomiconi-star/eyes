@@ -32,6 +32,8 @@
     left: 50%;
     transform: translate(-50%, -50%);
     pointer-events: none;
+    margin: 0;
+    transition: transform 0.05s linear;
   }
   #webcamCanvas {
     position: fixed;
@@ -187,9 +189,10 @@
 
         document.body.appendChild(wrapper);
 
-        // Occhi statici — posizione casuale fissa
+        // Occhi statici — posizione casuale fissa, pupilla segue mouse
         eyes.push({
           el: wrapper,
+          inner: inner,
           x, y,
           width: size, height: size
         });
@@ -201,7 +204,34 @@
     }
   }
 
-  // Occhi bloccati in posizione casuale — nessun movimento
+  // Pupille seguono il cursore del mouse
+  document.addEventListener('mousemove', (e) => {
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
+
+    for (const eye of eyes) {
+      const rect = eye.el.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      let dx = mouseX - centerX;
+      let dy = mouseY - centerY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const maxOffset = Math.min(rect.width, rect.height) * 0.35;
+
+      if (distance > maxOffset) {
+        const ratio = maxOffset / distance;
+        dx *= ratio;
+        dy *= ratio;
+      }
+
+      const offsetXPercent = (dx / rect.width) * 100;
+      const offsetYPercent = (dy / rect.height) * 100;
+
+      eye.inner.style.left = (50 + offsetXPercent) + '%';
+      eye.inner.style.top = (50 + offsetYPercent) + '%';
+    }
+  });
 </script>
 
 <script>
