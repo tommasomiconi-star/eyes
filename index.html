@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>eyes — WE ARE LOOKING</title>
+<title>eyes — VHS Horror Webcam</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body {
@@ -11,35 +11,13 @@ html, body {
   height: 100%;
   background: #000;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
-#stage {
+#container {
   position: relative;
-  /* Aspect ratio of looking copia.svg: 1984.25 / 2834.65 ≈ 0.700 */
-  margin: auto;
-  /* Fit within screen with comfortable padding */
-  max-height: 90vh;
-  max-width: calc(90vh * 0.700);
-  width: 90vw;
-  height: calc(90vw / 0.700);
-  background: url('looking%20copia.svg') no-repeat center top;
-  background-size: contain;
+  width: 100vw;
+  height: 100vh;
 }
-#webcamContainer {
-  position: absolute;
-  /* Position in the lower portion of the SVG */
-  /* SVG height 2834.65; lower area roughly 68%-95% from top */
-  top: 68%;
-  left: 10%;
-  width: 80%;
-  height: 26%;
-  border: 1px solid rgba(255,255,255,0.15);
-  background: rgba(0,0,0,0.3);
-  overflow: hidden;
-}
-#mainCanvas {
+canvas {
   display: block;
   width: 100%;
   height: 100%;
@@ -54,7 +32,7 @@ video {
   left: 50%;
   transform: translateX(-50%);
   text-align: center;
-  z-index: 100;
+  z-index: 10;
 }
 #startBtn {
   background: #111;
@@ -79,184 +57,41 @@ video {
   margin-top: 8px;
   text-transform: uppercase;
 }
-#settingsBtn {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 100;
-  background: none;
-  border: 1px solid #333;
-  color: #555;
-  font-family: 'Courier New', monospace;
-  font-size: 10px;
-  padding: 6px 10px;
-  cursor: pointer;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-#settingsBtn:hover {
-  color: #aaa;
-  border-color: #555;
-}
-#settingsPanel {
-  position: fixed;
-  top: 50px;
-  right: 16px;
-  z-index: 100;
-  background: #080808;
-  border: 1px solid #222;
-  padding: 16px 18px;
-  display: none;
-  min-width: 180px;
-}
-#settingsPanel.visible {
-  display: block;
-}
-.setting-row {
-  margin-bottom: 12px;
-}
-.setting-row:last-child {
-  margin-bottom: 0;
-}
-.setting-row label {
-  display: block;
-  color: #555;
-  font-size: 9px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  margin-bottom: 4px;
-}
-.setting-row input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 2px;
-  background: #222;
-  outline: none;
-  border: none;
-}
-.setting-row input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 10px;
-  height: 10px;
-  background: #555;
-  cursor: pointer;
-  border: none;
-}
-.setting-row input[type="range"]::-moz-range-thumb {
-  width: 10px;
-  height: 10px;
-  background: #555;
-  cursor: pointer;
-  border: none;
-}
-.setting-row .value {
-  color: #444;
-  font-size: 9px;
-  float: right;
-}
 </style>
 </head>
 <body>
-<div id="stage">
-  <div id="webcamContainer">
-    <canvas id="mainCanvas"></canvas>
-  </div>
+<div id="container">
+  <canvas id="mainCanvas"></canvas>
   <video id="video" autoplay playsinline></video>
-</div>
-
-<div id="overlay">
-  <button id="startBtn">▶ attiva webcam</button>
-  <div id="status">SURVEILLANCE FEED // SIGNAL UNSTABLE</div>
-</div>
-
-<button id="settingsBtn">⚙</button>
-<div id="settingsPanel">
-  <div class="setting-row">
-    <label>CONTRASTO <span class="value" id="contrastVal">50</span></label>
-    <input type="range" id="contrastSlider" min="0" max="100" value="50">
-  </div>
-  <div class="setting-row">
-    <label>PIXEL <span class="value" id="pixelVal">50</span></label>
-    <input type="range" id="pixelSlider" min="0" max="100" value="50">
-  </div>
-  <div class="setting-row">
-    <label>NOISE <span class="value" id="noiseVal">50</span></label>
-    <input type="range" id="noiseSlider" min="0" max="100" value="50">
+  <div id="overlay">
+    <button id="startBtn">▶ attiva webcam</button>
+    <div id="status">SURVEILLANCE FEED // SIGNAL UNSTABLE</div>
   </div>
 </div>
-
-<script src="https://unpkg.com/ml5@1/dist/ml5.js"></script>
 <script>
 const video = document.getElementById('video');
 const canvas = document.getElementById('mainCanvas');
 const ctx = canvas.getContext('2d');
-const webcamContainer = document.getElementById('webcamContainer');
 const startBtn = document.getElementById('startBtn');
 const statusEl = document.getElementById('status');
 
 let offCanvas = document.createElement('canvas');
 let offCtx = offCanvas.getContext('2d');
-let segmenter = null;
-let glitchCanvas = document.createElement('canvas');
-let glitchCtx = glitchCanvas.getContext('2d');
-let maskCanvas = document.createElement('canvas');
-let maskCtx = maskCanvas.getContext('2d');
-let personMaskData = null;
-let modelLoading = false;
 
-const settings = { contrast: 50, pixel: 2, noise: 0 };
-const contrastSlider = document.getElementById('contrastSlider');
-const pixelSlider = document.getElementById('pixelSlider');
-const noiseSlider = document.getElementById('noiseSlider');
-const contrastVal = document.getElementById('contrastVal');
-const pixelVal = document.getElementById('pixelVal');
-const noiseVal = document.getElementById('noiseVal');
-const settingsBtn = document.getElementById('settingsBtn');
-const settingsPanel = document.getElementById('settingsPanel');
-
-settingsBtn.addEventListener('click', () => settingsPanel.classList.toggle('visible'));
-
-function setupSlider(slider, valEl, key) {
-  slider.addEventListener('input', () => {
-    settings[key] = +slider.value;
-    valEl.textContent = slider.value;
-  });
-}
-setupSlider(contrastSlider, contrastVal, 'contrast');
-setupSlider(pixelSlider, pixelVal, 'pixel');
-setupSlider(noiseSlider, noiseVal, 'noise');
-
-// Size canvas to match the webcamContainer's current size
 function sizeCanvas() {
-  const rect = webcamContainer.getBoundingClientRect();
-  canvas.width = Math.max(1, Math.floor(rect.width));
-  canvas.height = Math.max(1, Math.floor(rect.height));
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 }
 window.addEventListener('resize', sizeCanvas);
+sizeCanvas();
 
 async function startWebcam() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
     video.srcObject = stream;
     await video.play();
-    statusEl.textContent = 'CARICAMENTO MODELLO...';
-    modelLoading = true;
-    try {
-      segmenter = ml5.bodySegmentation('BodyPix', {
-        outputStride: 16,
-        segmentationThreshold: 0.5
-      });
-      segmenter.detectStart(video, gotSegmentation);
-    } catch (err) {
-      console.warn('ml5 BodyPix failed, using fallback:', err);
-      segmenter = null;
-    }
-    modelLoading = false;
     startBtn.style.display = 'none';
     statusEl.textContent = 'SURVEILLANCE FEED // SIGNAL UNSTABLE';
-    sizeCanvas();
     loop();
   } catch (err) {
     statusEl.textContent = 'ERRORE WEBCAM // ' + err.message;
@@ -298,12 +133,11 @@ function renderFrame() {
   const imageData = offCtx.getImageData(0, 0, vw, vh);
   const data = imageData.data;
 
-  const pixelAmount = settings.pixel / 100;
-  const tileW = Math.max(2, Math.round(2 + pixelAmount * 14));
-  const tileH = Math.max(1, Math.round(1 + pixelAmount * 6));
-  const contrastNorm = (settings.contrast / 100) * 3;
-  const noiseChance = (settings.noise / 100) * 0.15;
-  const decompose = (1 - pixelAmount) * 0.5 + 0.2;
+  // B&W decomposition effect
+  const tileW = 4;
+  const tileH = 4;
+  const contrastNorm = 1.5;
+  const decompose = 0.3;
 
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, cw, ch);
@@ -312,7 +146,7 @@ function renderFrame() {
     for (let tx = 0; tx < cw; tx += tileW) {
       if (Math.random() < decompose) continue;
 
-      const driftX = Math.floor((Math.random() - 0.5) * tileW * 4);
+      const driftX = Math.floor((Math.random() - 0.5) * tileW * 2);
       const driftY = Math.floor((Math.random() - 0.5) * tileH * 2);
 
       const sx = Math.max(0, Math.min(vw - 1, Math.floor(((tx + driftX) / cw) * vw)));
@@ -326,8 +160,6 @@ function renderFrame() {
       gray = Math.round((gray - 128) * contrastNorm + 128);
       gray = Math.min(255, Math.max(0, gray));
       gray = gray > 128 ? 0 : 255;
-
-      if (Math.random() < noiseChance) gray = Math.random() > 0.5 ? 255 : 0;
 
       ctx.fillStyle = `rgb(${gray},${gray},${gray})`;
       ctx.fillRect(tx, ty, tileW, tileH);
@@ -335,126 +167,11 @@ function renderFrame() {
   }
 
   if (Math.random() < 0.12) macroblockRow(ctx.getImageData(0, 0, cw, ch).data, cw, ch);
-}
 
-function renderGlitchFrame() {
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
-  if (vw === 0 || vh === 0) return;
-
-  const cw = canvas.width;
-  const ch = canvas.height;
-  glitchCanvas.width = cw;
-  glitchCanvas.height = ch;
-
-  offCanvas.width = vw;
-  offCanvas.height = vh;
-  offCtx.drawImage(video, 0, 0, vw, vh);
-  const imageData = offCtx.getImageData(0, 0, vw, vh);
-  const data = imageData.data;
-
-  const pixelAmount = settings.pixel / 100;
-  const tileW = Math.max(2, Math.round(2 + pixelAmount * 14));
-  const tileH = Math.max(1, Math.round(1 + pixelAmount * 6));
-  const contrastNorm = (settings.contrast / 100) * 3;
-  const noiseChance = (settings.noise / 100) * 0.15;
-  const decompose = (1 - pixelAmount) * 0.5 + 0.2;
-
-  glitchCtx.fillStyle = '#000';
-  glitchCtx.fillRect(0, 0, cw, ch);
-
-  for (let ty = 0; ty < ch; ty += tileH) {
-    for (let tx = 0; tx < cw; tx += tileW) {
-      if (Math.random() < decompose) continue;
-
-      const driftX = Math.floor((Math.random() - 0.5) * tileW * 4);
-      const driftY = Math.floor((Math.random() - 0.5) * tileH * 2);
-
-      const sx = Math.max(0, Math.min(vw - 1, Math.floor(((tx + driftX) / cw) * vw)));
-      const sy = Math.max(0, Math.min(vh - 1, Math.floor(((ty + driftY) / ch) * vh)));
-      const idx = (sy * vw + sx) * 4;
-      const r = data[idx] || 0;
-      const g = data[idx + 1] || 0;
-      const b = data[idx + 2] || 0;
-
-      let gray = 0.299 * r + 0.587 * g + 0.114 * b;
-      gray = Math.round((gray - 128) * contrastNorm + 128);
-      gray = Math.min(255, Math.max(0, gray));
-      gray = gray > 128 ? 0 : 255;
-
-      if (Math.random() < noiseChance) gray = Math.random() > 0.5 ? 255 : 0;
-
-      glitchCtx.fillStyle = `rgb(${gray},${gray},${gray})`;
-      glitchCtx.fillRect(tx, ty, tileW, tileH);
-    }
-  }
-}
-
-function gotSegmentation(result) {
-  if (!result) return;
-  const rawMask = result.mask;
-  if (!rawMask) return;
-
-  const cw = canvas.width;
-  const ch = canvas.height;
-  maskCanvas.width = cw;
-  maskCanvas.height = ch;
-
-  if (rawMask instanceof ImageData) {
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = rawMask.width;
-    tempCanvas.height = rawMask.height;
-    const tempCtx = tempCanvas.getContext('2d');
-    tempCtx.putImageData(rawMask, 0, 0);
-    maskCtx.drawImage(tempCanvas, 0, 0, rawMask.width, rawMask.height, 0, 0, cw, ch);
-  } else {
-    const vw = video.videoWidth;
-    const vh = video.videoHeight;
-    const maskW = rawMask.width || rawMask.videoWidth || vw;
-    const maskH = rawMask.height || rawMask.videoHeight || vh;
-    maskCtx.drawImage(rawMask, 0, 0, maskW, maskH, 0, 0, cw, ch);
-  }
-
-  const maskData = maskCtx.getImageData(0, 0, cw, ch);
-  const d = maskData.data;
-  for (let i = 0; i < d.length; i += 4) {
-    const isPerson = d[i] > 128;
-    d[i] = 255;
-    d[i + 1] = 255;
-    d[i + 2] = 255;
-    d[i + 3] = isPerson ? 255 : 0;
-  }
-  maskCtx.putImageData(maskData, 0, 0);
-  personMaskData = maskData;
-}
-
-function compositePersonGlitch() {
-  const cw = canvas.width;
-  const ch = canvas.height;
-
-  offCanvas.width = cw;
-  offCanvas.height = ch;
-  offCtx.drawImage(video, 0, 0, cw, ch);
-  ctx.drawImage(offCanvas, 0, 0);
-
-  if (personMaskData) {
-    maskCtx.putImageData(personMaskData, 0, 0);
-  }
-
-  maskCtx.globalCompositeOperation = 'source-in';
-  maskCtx.drawImage(glitchCanvas, 0, 0);
-  maskCtx.globalCompositeOperation = 'source-over';
-
-  ctx.drawImage(maskCanvas, 0, 0);
-}
-
-function applyPostFX() {
-  const cw = canvas.width;
-  const ch = canvas.height;
-  const imageData = ctx.getImageData(0, 0, cw, ch);
-  const srcData = new Uint8ClampedArray(imageData.data);
-  const data = imageData.data;
-
+  // CRT bulge post-FX
+  const postData = ctx.getImageData(0, 0, cw, ch);
+  const src = new Uint8ClampedArray(postData.data);
+  const d = postData.data;
   const bulgeLUT = new Uint16Array(cw);
   for (let x = 0; x < cw; x++) {
     const nx = (x / cw) * 2 - 1;
@@ -462,41 +179,31 @@ function applyPostFX() {
     bulgeLUT[x] = Math.max(0, Math.min(cw - 1, Math.floor((x - cw / 2) * distortion + cw / 2)));
   }
   for (let y = 0; y < ch; y++) {
-    const rowOffset = y * cw;
+    const row = y * cw;
     for (let x = 0; x < cw; x++) {
-      const srcIdx = (rowOffset + bulgeLUT[x]) * 4;
-      const dstIdx = (rowOffset + x) * 4;
-      data[dstIdx] = srcData[srcIdx];
-      data[dstIdx + 1] = srcData[srcIdx + 1];
-      data[dstIdx + 2] = srcData[srcIdx + 2];
-      data[dstIdx + 3] = 255;
+      const si = (row + bulgeLUT[x]) * 4;
+      const di = (row + x) * 4;
+      d[di] = src[si];
+      d[di + 1] = src[si + 1];
+      d[di + 2] = src[si + 2];
+      d[di + 3] = 255;
     }
   }
-
   if (Math.random() < 0.15) {
     const shiftX = 1 + Math.floor(Math.random() * 3);
     for (let y = 0; y < ch; y++) {
       const row = y * cw * 4;
       for (let x = cw - 1; x >= shiftX; x--) {
         const i = row + x * 4;
-        data[i] = data[i - shiftX * 4];
+        d[i] = d[i - shiftX * 4];
       }
     }
   }
-
-  ctx.putImageData(imageData, 0, 0);
+  ctx.putImageData(postData, 0, 0);
 }
 
 function loop() {
-  if (segmenter && !modelLoading && personMaskData) {
-    renderGlitchFrame();
-    compositePersonGlitch();
-  } else {
-    renderFrame();
-  }
-
-  applyPostFX();
-  statusEl.textContent = 'SURVEILLANCE FEED // SIGNAL UNSTABLE';
+  renderFrame();
   requestAnimationFrame(loop);
 }
 </script>
