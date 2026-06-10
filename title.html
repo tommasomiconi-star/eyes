@@ -154,17 +154,11 @@
         img.style.top = y + 'px';
         document.body.appendChild(img);
 
-        // Velocità casuale: tra 2 e 6 pixel per frame
-        const speed = 2 + Math.random() * 4;
-        const angle = Math.random() * Math.PI * 2;
-        const vx = Math.cos(angle) * speed;
-        const vy = Math.sin(angle) * speed;
-
+        // Occhi statici — posizione casuale fissa
         eyes.push({
           el: img,
           x, y,
-          width: size, height: size,
-          vx, vy
+          width: size, height: size
         });
 
         placed = true;
@@ -174,40 +168,7 @@
     }
   }
 
-  function animate() {
-    const W = window.innerWidth;
-    const H = window.innerHeight;
-
-    for (const eye of eyes) {
-      eye.x += eye.vx;
-      eye.y += eye.vy;
-
-      // Rimbalzo / bounce ai bordi
-      if (eye.x <= 0) {
-        eye.x = 0;
-        eye.vx = Math.abs(eye.vx);
-      }
-      if (eye.x + eye.width >= W) {
-        eye.x = W - eye.width;
-        eye.vx = -Math.abs(eye.vx);
-      }
-      if (eye.y <= 0) {
-        eye.y = 0;
-        eye.vy = Math.abs(eye.vy);
-      }
-      if (eye.y + eye.height >= H) {
-        eye.y = H - eye.height;
-        eye.vy = -Math.abs(eye.vy);
-      }
-
-      eye.el.style.left = eye.x + 'px';
-      eye.el.style.top = eye.y + 'px';
-    }
-
-    requestAnimationFrame(animate);
-  }
-
-  animate();
+  // Occhi bloccati in posizione casuale — nessun movimento
 </script>
 
 <script>
