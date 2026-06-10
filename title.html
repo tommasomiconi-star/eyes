@@ -177,11 +177,11 @@
         outer.style.display = 'block';
         wrapper.appendChild(outer);
 
-        // Immagine interna centrata (iride/pupilla)
+        // Immagine interna — stessa dimensione dell'esterna
         const inner = document.createElement('img');
         inner.src = innerImg;
         inner.className = 'eye-inner';
-        inner.style.width = '40%';
+        inner.style.width = '100%';
         inner.style.height = 'auto';
         wrapper.appendChild(inner);
 
