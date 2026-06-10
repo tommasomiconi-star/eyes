@@ -1,0 +1,60 @@
+<h2>3 Approcci — Person Silhouette Glitch</h2>
+
+<div class="section">
+  <div class="options">
+    <div class="option" data-choice="a" onclick="toggleSelect(this)">
+      <div class="letter">A</div>
+      <div class="content">
+        <h3>SelfieSegmentation (consigliato)</h3>
+        <p>ml5.js bodySegmentation con modello MediaPipe SelfieSegmentation</p>
+        <div class="pros-cons" style="margin-top:0.5rem;">
+          <div class="pros"><h4>Pro</h4><ul>
+            <li>Maschera pixel-perfect della silhouette</li>
+            <li>API ml5.js semplice (poche righe)</li>
+            <li>Funziona anche su volti parziali</li>
+          </ul></div>
+          <div class="cons"><h4>Contro</h4><ul>
+            <li>+2-4MB di modello da caricare</li>
+            <li>Latenza iniziale download</li>
+          </ul></div>
+        </div>
+      </div>
+    </div>
+    <div class="option" data-choice="b" onclick="toggleSelect(this)">
+      <div class="letter">B</div>
+      <div class="content">
+        <h3>bodyPose (keypoints → poligono)</h3>
+        <p>ml5.js bodyPose con MoveNet/BlazePose, crea poligono dai keypoints</p>
+        <div class="pros-cons" style="margin-top:0.5rem;">
+          <div class="pros"><h4>Pro</h4><ul>
+            <li>Modello più leggero</li>
+            <li>Multi-persona nativo</li>
+          </ul></div>
+          <div class="cons"><h4>Contro</h4><ul>
+            <li>Silhouette poligonale approssimativa</li>
+            <li>Meno preciso su capelli/bordi</li>
+            <li>Più logica di composizione manuale</li>
+          </ul></div>
+        </div>
+      </div>
+    </div>
+    <div class="option" data-choice="c" onclick="toggleSelect(this)">
+      <div class="letter">C</div>
+      <div class="content">
+        <h3>Background Subtraction (no ml5)</h3>
+        <p>Nessuna dipendenza esterna, differenza tra frame consecutivi</p>
+        <div class="pros-cons" style="margin-top:0.5rem;">
+          <div class="pros"><h4>Pro</h4><ul>
+            <li>Zero dipendenze</li>
+            <li>Nessun download modello</li>
+          </ul></div>
+          <div class="cons"><h4>Contro</h4><ul>
+            <li>Non funziona se la persona sta ferma</li>
+            <li>Non distingue persona da altri movimenti</li>
+            <li>Qualità scadente</li>
+          </ul></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

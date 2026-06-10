@@ -1,0 +1,26 @@
+<h2>Maschera persona o area tracker?</h2>
+<p class="subtitle">Come deve essere applicato l'effetto alla persona?</p>
+
+<div class="options">
+  <div class="option" data-choice="silhouette" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Silhouette / maschera pixel</h3>
+      <p>L'effetto segue il contorno preciso della persona. I pixel della persona vengono decomposti, lo sfondo rimane video normale pulito.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="bbox" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Rettangolo / area</h3>
+      <p>Un rettangolo approssimativo intorno alla persona. Più semplice e performante, meno preciso.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="keypoints" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Punti di riferimento (keypoints)</h3>
+      <p>L'effetto si aggancia ai punti del corpo (testa, spalle, mani) creando una forma poligonale approssimativa.</p>
+    </div>
+  </div>
+</div>

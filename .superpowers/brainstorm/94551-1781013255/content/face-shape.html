@@ -1,0 +1,19 @@
+<h2>Bounding box o maschera facciale?</h2>
+<p class="subtitle">Come deve essere ritagliata l'area di applicazione dell'effetto?</p>
+
+<div class="options">
+  <div class="option" data-choice="bbox" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Bounding Box</h3>
+      <p>Rettangolo intorno al volto. Più semplice, più veloce, performance migliori.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="mask" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Maschera facciale (contorno)</h3>
+      <p>Segue i landmarks del volto. Più preciso ma più complesso e costoso in termini di performance.</p>
+    </div>
+  </div>
+</div>
