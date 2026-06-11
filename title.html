@@ -33,7 +33,7 @@
     transform: translate(-50%, -50%);
     pointer-events: none;
     margin: 0;
-    transition: transform 0.05s linear;
+    /* nessuna transizione per movimento scattoso istantaneo */
   }
   #webcamCanvas {
     position: fixed;
@@ -83,57 +83,10 @@
     position: relative;
     z-index: 2;
   }
-  .title-container {
-    position: relative;
-    display: inline-block;
-    max-width: 1000px;
-    cursor: none;
-  }
-  .svg-white {
-    display: block;
-    max-width: 1000px;
-    height: auto;
-    fill: #fff;
-  }
-  .svg-rainbow {
-    position: absolute;
-    top: 0;
-    left: 0;
-    display: block;
-    max-width: 1000px;
-    height: auto;
-    fill: url(#rainbow);
-    clip-path: circle(0px at 0px 0px);
-    pointer-events: none;
-  }
-  .spotlight-ring {
-    position: absolute;
-    width: 160px;
-    height: 160px;
-    border: 2px solid rgba(255, 255, 255, 0.9);
-    border-radius: 50%;
-    pointer-events: none;
-    transform: translate(-50%, -50%);
-    opacity: 0;
-    box-shadow: 0 0 30px rgba(255, 255, 255, 0.4), inset 0 0 20px rgba(255, 255, 255, 0.2);
-    z-index: 3;
-  }
 </style>
 </head>
 <body>
-<div class="title-container" id="titleContainer">
-<svg class="svg-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 680.41">
-  <defs>
-    <linearGradient id="rainbow" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ff0000"/>
-      <stop offset="16.6%" stop-color="#ff7f00"/>
-      <stop offset="33.3%" stop-color="#ffff00"/>
-      <stop offset="50%" stop-color="#00ff00"/>
-      <stop offset="66.6%" stop-color="#0000ff"/>
-      <stop offset="83.3%" stop-color="#4b0082"/>
-      <stop offset="100%" stop-color="#9400d3"/>
-    </linearGradient>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 680.41" style="display:block;max-width:1000px;height:auto;fill:#fff;">
   <path d="M245.99,297.69l-50.46-202.63h-.83l-49.61,202.63h-66.29L0-.02h65.46l47.13,202.63h.83L165.11-.02h61.3l50.86,205.14h.83L326.88-.02h64.21l-80.06,297.71h-65.04Z"/>
   <path d="M643.75,0v55.03h-157.18v63.8h144.27v50.86h-144.27v72.96h160.52v55.03h-225.98V-.02h222.64V0Z"/>
   <path d="M955.63,0l111.33,297.71h-67.97l-22.52-66.29h-111.33l-23.35,66.29h-65.89L888.49,0h67.14ZM959.37,182.62l-37.52-109.23h-.83l-38.78,109.23h77.13Z"/>
@@ -147,25 +100,6 @@
   <path d="M1412.61,358.94l124.25,199.72h.83v-199.72h61.3v297.71h-65.46l-123.83-199.29h-.83v199.29h-61.3v-297.71h65.04Z"/>
   <path d="M1832.87,654.34c-14.17,5.98-28.5,8.96-42.94,8.96-22.79,0-43.3-3.96-61.5-11.89-18.2-7.93-33.56-18.83-46.07-32.73-12.51-13.9-22.1-30.22-28.77-48.98-6.67-18.76-10.01-38.98-10.01-60.67s3.34-42.87,10.01-61.92c6.67-19.03,16.25-35.64,28.77-49.81,12.51-14.17,27.87-25.3,46.07-33.36,18.2-8.06,38.71-12.09,61.5-12.09,15.29,0,30.09,2.28,44.39,6.87s27.25,11.33,38.78,20.22c11.53,8.91,21.07,19.88,28.57,32.93,7.5,13.07,12.09,28.07,13.77,45.02h-62.55c-3.9-16.68-11.4-29.19-22.52-37.52-11.13-8.33-24.6-12.51-40.43-12.51-14.73,0-27.25,2.84-37.52,8.55-10.3,5.71-18.63,13.34-25.01,22.92-6.4,9.58-11.04,20.51-13.97,32.73-2.91,12.22-4.39,24.87-4.39,37.95s1.46,24.67,4.39,36.49c2.91,11.82,7.57,22.45,13.97,31.9,6.38,9.45,14.73,17.04,25.01,22.72,10.28,5.71,22.79,8.55,37.52,8.55,21.67,0,38.42-5.48,50.24-16.48,11.82-10.97,18.69-26.89,20.64-47.73h-65.89v-48.78h125.08v160.94h-41.69l-6.67-33.76c-11.66,15-24.6,25.5-38.78,31.48h0Z"/>
 </svg>
-
-<svg class="svg-rainbow" id="rainbowSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 680.41">
-  <path d="M245.99,297.69l-50.46-202.63h-.83l-49.61,202.63h-66.29L0-.02h65.46l47.13,202.63h.83L165.11-.02h61.3l50.86,205.14h.83L326.88-.02h64.21l-80.06,297.71h-65.04Z"/>
-  <path d="M643.75,0v55.03h-157.18v63.8h144.27v50.86h-144.27v72.96h160.52v55.03h-225.98V-.02h222.64V0Z"/>
-  <path d="M955.63,0l111.33,297.71h-67.97l-22.52-66.29h-111.33l-23.35,66.29h-65.89L888.49,0h67.14ZM959.37,182.62l-37.52-109.23h-.83l-38.78,109.23h77.13Z"/>
-  <path d="M1253.32,0c13.34,0,25.36,2.15,36.07,6.47,10.7,4.32,19.88,10.21,27.51,17.73,7.63,7.5,13.48,16.19,17.51,26.06,4.03,9.87,6.04,20.51,6.04,31.9,0,17.51-3.69,32.66-11.06,45.45-7.37,12.78-19.39,22.52-36.07,29.19v.83c8.06,2.24,14.73,5.62,20.01,10.21s9.58,10.01,12.92,16.25c3.34,6.25,5.78,13.14,7.3,20.64s2.57,15,3.13,22.52c.27,4.72.56,10.28.83,16.68.27,6.4.76,12.92,1.46,19.59s1.81,13.01,3.34,18.96c1.52,5.98,3.83,11.06,6.87,15.22h-65.46c-3.63-9.45-5.84-20.71-6.67-33.76-.83-13.05-2.08-25.57-3.76-37.52-2.24-15.56-6.96-26.95-14.17-34.19-7.23-7.23-19.05-10.84-35.44-10.84h-65.46v116.33h-65.46V.02h160.52l.04-.02ZM1229.97,134.66c15.02,0,26.26-3.34,33.78-10.01,7.5-6.67,11.26-17.51,11.26-32.53s-3.76-24.94-11.26-31.48c-7.5-6.54-18.76-9.81-33.78-9.81h-71.71v83.8h71.71v.02Z"/>
-  <path d="M1616.49,0v55.03h-157.18v63.8h144.27v50.86h-144.27v72.96h160.52v55.03h-225.98V-.02h222.64V0Z"/>
-  <path d="M92.98,358.94v242.66h145.09v55.03H27.51v-297.71h65.46v.02Z"/>
-  <path d="M271.85,447.12c6.67-19.03,16.25-35.64,28.77-49.81,12.51-14.17,27.87-25.3,46.07-33.36,18.2-8.06,38.71-12.09,61.5-12.09s43.63,4.03,61.7,12.09c18.07,8.06,33.36,19.19,45.87,33.36,12.51,14.17,22.1,30.78,28.77,49.81,6.67,19.05,10.01,39.69,10.01,61.92s-3.34,41.91-10.01,60.67c-6.67,18.76-16.25,35.1-28.77,48.98-12.51,13.9-27.81,24.81-45.87,32.73-18.07,7.93-38.64,11.89-61.7,11.89s-43.3-3.96-61.5-11.89c-18.2-7.93-33.56-18.83-46.07-32.73-12.51-13.9-22.1-30.22-28.77-48.98-6.67-18.76-10.01-38.98-10.01-60.67s3.34-42.87,10.01-61.92ZM331.67,545.52c2.91,11.82,7.57,22.45,13.97,31.9,6.38,9.45,14.73,17.04,25.01,22.72,10.28,5.71,22.79,8.55,37.52,8.55s27.25-2.84,37.52-8.55c10.28-5.69,18.63-13.28,25.01-22.72,6.38-9.45,11.06-20.08,13.97-31.9,2.91-11.82,4.39-23.98,4.39-36.49s-1.46-25.7-4.39-37.95c-2.91-12.22-7.57-23.15-13.97-32.73-6.4-9.58-14.73-17.24-25.01-22.92-10.28-5.69-22.79-8.55-37.52-8.55s-27.25,2.84-37.52,8.55c-10.28,5.71-18.63,13.34-25.01,22.92-6.4,9.58-11.06,20.51-13.97,32.73-2.91,12.22-4.39,24.87-4.39,37.95s1.46,24.67,4.39,36.49Z"/>
-  <path d="M596.23,447.12c6.67-19.03,16.25-35.64,28.77-49.81,12.51-14.17,27.87-25.3,46.07-33.36,18.2-8.06,38.71-12.09,61.5-12.09s43.63,4.03,61.7,12.09c18.07,8.06,33.36,19.19,45.87,33.36,12.51,14.17,22.1,30.78,28.77,49.81,6.67,19.05,10.01,39.69,10.01,61.92s-3.34,41.91-10.01,60.67c-6.67,18.76-16.25,35.1-28.77,48.98-12.51,13.9-27.81,24.81-45.87,32.73-18.07,7.93-38.64,11.89-61.7,11.89s-43.3-3.96-61.5-11.89c-18.2-7.93-33.56-18.83-46.07-32.73-12.51-13.9-22.1-30.22-28.77-48.98s-10.01-38.98-10.01-60.67,3.34-42.87,10.01-61.92ZM656.07,545.52c2.91,11.82,7.57,22.45,13.97,31.9,6.38,9.45,14.73,17.04,25.01,22.72,10.28,5.71,22.79,8.55,37.52,8.55s27.25-2.84,37.52-8.55c10.28-5.69,18.63-13.28,25.01-22.72,6.38-9.45,11.06-20.08,13.97-31.9s4.39-23.98,4.39-36.49-1.46-25.7-4.39-37.95c-2.91-12.22-7.57-23.15-13.97-32.73-6.4-9.58-14.73-17.24-25.01-22.92-10.28-5.69-22.79-8.55-37.52-8.55s-27.25,2.84-37.52,8.55c-10.28,5.71-18.63,13.34-25.01,22.92-6.4,9.58-11.06,20.51-13.97,32.73-2.91,12.22-4.39,24.87-4.39,37.95s1.46,24.67,4.39,36.49Z"/>
-  <path d="M988.99,358.94v123.42l116.33-123.42h81.71l-116.33,117.58,127.59,180.13h-82.14l-89.64-133.83-37.52,37.95v95.89h-65.46v-297.71h65.46,0Z"/>
-  <path d="M1290.02,358.94v297.71h-65.46v-297.71h65.46Z"/>
-  <path d="M1412.61,358.94l124.25,199.72h.83v-199.72h61.3v297.71h-65.46l-123.83-199.29h-.83v199.29h-61.3v-297.71h65.04Z"/>
-  <path d="M1832.87,654.34c-14.17,5.98-28.5,8.96-42.94,8.96-22.79,0-43.3-3.96-61.5-11.89-18.2-7.93-33.56-18.83-46.07-32.73-12.51-13.9-22.1-30.22-28.77-48.98-6.67-18.76-10.01-38.98-10.01-60.67s3.34-42.87,10.01-61.92c6.67-19.03,16.25-35.64,28.77-49.81,12.51-14.17,27.87-25.3,46.07-33.36,18.2-8.06,38.71-12.09,61.5-12.09,15.29,0,30.09,2.28,44.39,6.87s27.25,11.33,38.78,20.22c11.53,8.91,21.07,19.88,28.57,32.93,7.5,13.07,12.09,28.07,13.77,45.02h-62.55c-3.9-16.68-11.4-29.19-22.52-37.52-11.13-8.33-24.6-12.51-40.43-12.51-14.73,0-27.25,2.84-37.52,8.55-10.3,5.71-18.63,13.34-25.01,22.92-6.4,9.58-11.04,20.51-13.97,32.73-2.91,12.22-4.39,24.87-4.39,37.95s1.46,24.67,4.39,36.49c2.91,11.82,7.57,22.45,13.97,31.9,6.38,9.45,14.73,17.04,25.01,22.72,10.28,5.71,22.79,8.55,37.52,8.55,21.67,0,38.42-5.48,50.24-16.48,11.82-10.97,18.69-26.89,20.64-47.73h-65.89v-48.78h125.08v160.94h-41.69l-6.67-33.76c-11.66,15-24.6,25.5-38.78,31.48h0Z"/>
-</svg>
-</div>
-
-<!-- Contorno rotondo che segue il cursore -->
-<div class="spotlight-ring" id="spotlight"></div>
 
 <canvas id="webcamCanvas"></canvas>
 <video id="webcamVideo" autoplay playsinline></video>
@@ -270,63 +204,29 @@
     }
   }
 
-  // Pupille seguono il cursore del mouse + spotlight su titolo
-  const spotlight = document.getElementById('spotlight');
-  const titleContainer = document.getElementById('titleContainer');
-  const rainbowSvg = document.getElementById('rainbowSvg');
+  // Pupille si muovono autonomamente in modo veloce, casuale e scattoso
+  for (const eye of eyes) {
+    function jitterPupil() {
+      const maxOffsetPx = Math.min(eye.width, eye.height) * 0.08;
+      const angle = Math.random() * Math.PI * 2;
+      const distance = Math.random() * maxOffsetPx;
 
-  document.addEventListener('mousemove', (e) => {
-    const mouseX = e.clientX;
-    const mouseY = e.clientY;
+      const dx = Math.cos(angle) * distance;
+      const dy = Math.sin(angle) * distance;
 
-    // --- Spotlight titolo EYES ---
-    const titleRect = titleContainer.getBoundingClientRect();
-    const insideTitle = mouseX >= titleRect.left && mouseX <= titleRect.right &&
-                        mouseY >= titleRect.top && mouseY <= titleRect.bottom;
-
-    if (insideTitle) {
-      const spotX = mouseX - titleRect.left;
-      const spotY = mouseY - titleRect.top;
-      spotlight.style.left = spotX + 'px';
-      spotlight.style.top = spotY + 'px';
-      spotlight.style.opacity = '1';
-
-      // Calcola posizione clip-path nel viewBox SVG
-      const svgW = 1920;
-      const svgH = 680.41;
-      const cx = (spotX / titleRect.width) * svgW;
-      const cy = (spotY / titleRect.height) * svgH;
-      const r = 80 * (svgW / titleRect.width);
-      rainbowSvg.style.clipPath = `circle(${r}px at ${cx}px ${cy}px)`;
-    } else {
-      spotlight.style.opacity = '0';
-      rainbowSvg.style.clipPath = 'circle(0px at 0px 0px)';
-    }
-
-    // --- Pupille occhi ---
-    for (const eye of eyes) {
-      const rect = eye.el.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-
-      let dx = mouseX - centerX;
-      let dy = mouseY - centerY;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      const maxOffset = Math.min(rect.width, rect.height) * 0.08;
-
-      if (distance > maxOffset) {
-        const ratio = maxOffset / distance;
-        dx *= ratio;
-        dy *= ratio;
-      }
-
-      const offsetXPercent = (dx / rect.width) * 100;
-      const offsetYPercent = (dy / rect.height) * 100;
+      const offsetXPercent = (dx / eye.width) * 100;
+      const offsetYPercent = (dy / eye.height) * 100;
 
       eye.inner.style.left = (50 + offsetXPercent) + '%';
       eye.inner.style.top = (50 + offsetYPercent) + '%';
+
+      // Prossimo scatto: tra 80ms e 400ms
+      const nextJitter = 80 + Math.random() * 320;
+      setTimeout(jitterPupil, nextJitter);
     }
-  });
+
+    jitterPupil();
+  }
 </script>
 
 <script>
